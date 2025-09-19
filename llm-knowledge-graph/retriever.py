@@ -9,13 +9,28 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_core.prompts import ChatPromptTemplate
 
-llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'), 
-    temperature=0
-)
-
-embedding_provider = OpenAIEmbeddings(
-    openai_api_key=os.getenv('OPENAI_API_KEY')
+# --- LLM and Embeddings: Azure/OpenAI switch ---
+if os.getenv("AZURE_OPENAI_API_KEY"):
+    llm = ChatOpenAI(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        temperature=0
+    )
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    )
+else:
+    llm = ChatOpenAI(
+        openai_api_key=os.getenv('OPENAI_API_KEY'), 
+        temperature=0
+    )
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv('OPENAI_API_KEY')
     )
 
 graph = Neo4jGraph(

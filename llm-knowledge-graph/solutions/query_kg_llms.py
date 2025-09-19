@@ -7,16 +7,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # tag::llms[]
-qa_llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'), 
-    model="gpt-3.5-turbo",
-)
-
-cypher_llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'), 
-    model="gpt-4",
-    temperature=0
-)
+if os.getenv("AZURE_OPENAI_API_KEY"):
+    qa_llm = ChatOpenAI(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        model="gpt-35-turbo",  # Use your Azure deployment name if needed
+    )
+    cypher_llm = ChatOpenAI(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        model="gpt-4",  # Use your Azure deployment name if needed
+        temperature=0
+    )
+else:
+    qa_llm = ChatOpenAI(
+        openai_api_key=os.getenv('OPENAI_API_KEY'), 
+        model="gpt-3.5-turbo",
+    )
+    cypher_llm = ChatOpenAI(
+        openai_api_key=os.getenv('OPENAI_API_KEY'), 
+        model="gpt-4",
+        temperature=0
+    )
 # end::llms[]
 
 graph = Neo4jGraph(

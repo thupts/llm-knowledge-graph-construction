@@ -1,9 +1,18 @@
+import os
 from langchain_openai import OpenAIEmbeddings
 from langchain_neo4j import Neo4jGraph
 
-embedding_provider = OpenAIEmbeddings(
-    openai_api_key=os.getenv('OPENAI_API_KEY'),
-    model="text-embedding-ada-002"
+if os.getenv("AZURE_OPENAI_API_KEY"):
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    )
+else:
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv('OPENAI_API_KEY'),
+        model="text-embedding-ada-002"
     )
 
 graph = Neo4jGraph(
@@ -18,7 +27,7 @@ for chunk in chunks:
     filename = os.path.basename(chunk.metadata["source"])
 
     # Create a unique identifier for the chunk    
-    chunk_id = f"{filename}.{chunk.metadata["page"]}"
+    chunk_id = f"{filename}.{chunk.metadata['page']}"
 
     # Embed the chunk
     chunk_embedding = embedding_provider.embed_query(chunk.page_content)
@@ -28,7 +37,7 @@ for chunk in chunks:
         "filename": filename,
         "chunk_id": chunk_id,
         "text": chunk.page_content,
-        "textEmbedding": chunk_embedding
+        "embedding": chunk_embedding
     }
 
     graph.query("""
@@ -45,7 +54,7 @@ for chunk in chunks:
 # Create the vector index
 graph.query("""
     CREATE VECTOR INDEX `vector`
-    FOR (c: Chunk) ON (c.embedding)
+    FOR (c:Chunk) ON (c.textEmbedding)
     OPTIONS {indexConfig: {
     `vector.dimensions`: 1536,
     `vector.similarity_function`: 'cosine'

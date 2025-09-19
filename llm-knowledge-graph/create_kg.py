@@ -13,14 +13,29 @@ load_dotenv()
 
 DOCS_PATH = "llm-knowledge-graph/data/course/pdfs"
 
-llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'), 
-    model_name="gpt-3.5-turbo"
-)
-
-embedding_provider = OpenAIEmbeddings(
-    openai_api_key=os.getenv('OPENAI_API_KEY'),
-    model="text-embedding-ada-002"
+# --- LLM and Embeddings: Azure/OpenAI switch ---
+if os.getenv("AZURE_OPENAI_API_KEY"):
+    llm = ChatOpenAI(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+        model_name="gpt-35-turbo"
+    )
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    )
+else:
+    llm = ChatOpenAI(
+        openai_api_key=os.getenv('OPENAI_API_KEY'), 
+        model_name="gpt-3.5-turbo"
+    )
+    embedding_provider = OpenAIEmbeddings(
+        openai_api_key=os.getenv('OPENAI_API_KEY'),
+        model="text-embedding-ada-002"
     )
 
 graph = Neo4jGraph(
@@ -31,7 +46,7 @@ graph = Neo4jGraph(
 
 doc_transformer = LLMGraphTransformer(
     llm=llm,
-    )
+)
 
 # Load and split the documents
 loader = DirectoryLoader(DOCS_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader)
@@ -48,7 +63,7 @@ chunks = text_splitter.split_documents(docs)
 for chunk in chunks:
 
     filename = os.path.basename(chunk.metadata["source"])
-    chunk_id = f"{filename}.{chunk.metadata["page"]}"
+    chunk_id = f"{filename}.{chunk.metadata['page']}"
     print("Processing -", chunk_id)
 
     # Embed the chunk
@@ -84,14 +99,13 @@ for chunk in chunks:
         )
 
         for node in graph_doc.nodes:
-
             graph_doc.relationships.append(
                 Relationship(
                     source=chunk_node,
                     target=node, 
                     type="HAS_ENTITY"
-                    )
                 )
+            )
 
     # add the graph documents to the graph
     graph.add_graph_documents(graph_docs)
