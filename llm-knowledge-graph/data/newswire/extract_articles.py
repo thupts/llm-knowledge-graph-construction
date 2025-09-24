@@ -1,64 +1,69 @@
-import os, csv
+"""Extract text from locally stored PDF articles into a CSV file.
 
-from datasets import load_dataset
-from fpdf import FPDF
+The script reads every PDF within ``llm-knowledge-graph/data/newswire/pdfs``
+and writes their contents to ``articles.csv`` with the following columns:
 
-# dict_keys(
-# ['article', 'byline', 'dates', 'newspaper_metadata', 'antitrust', 'civil_rights', 
-# 'crime', 'govt_regulation', 'labor_movement', 'politics', 'protests', 'ca_topic', 
-# 'ner_words', 'ner_labels', 'wire_city', 'wire_state', 'wire_country', 'wire_coordinates', 
-# 'wire_location_notes', 'people_mentioned', 'cluster_size', 'year'])
+- id: stem of the PDF filename
+- date: file modification date (YYYY-MM-DD)
+- text: concatenated text extracted from all pages
+- newspapers: left empty for manual enrichment later
+"""
 
-ARTICLES_REQUIRED = 100
-DATA_PATH = 'llm-knowledge-graph/data/newswire'
-ARTICLE_FILENAME = os.path.join(DATA_PATH, 'articles.csv')
-PDF_PATH = os.path.join(DATA_PATH, 'pdfs')
-FONT_PATH = os.path.join(DATA_PATH, 'CourierPrime-Regular.ttf')
-DATAFILE = '1976_data_clean.json'
+import csv
+from datetime import datetime
+from pathlib import Path
 
-def create_pdf(text, path):
-    pdf = FPDF()
+from pypdf import PdfReader
 
-    pdf.add_page()
-    pdf.add_font("CourierPrime", style="", fname=FONT_PATH, uni=True)
-    pdf.set_font('CourierPrime', size=12)
+DATA_PATH = Path("llm-knowledge-graph/data/newswire")
+PDF_PATH = DATA_PATH / "pdfs"
+ARTICLE_FILENAME = DATA_PATH / "articles.csv"
 
-    pdf.write(5, text)
-    pdf.output(path)
 
-ds = load_dataset("dell-research-harvard/newswire", data_files=DATAFILE, split="train")
+def extract_text_from_pdf(pdf_file: Path) -> str:
+    """Return concatenated text from all pages of the PDF."""
 
-articles_csv_file = open(ARTICLE_FILENAME, "w", encoding="utf8", newline='')
-fieldnames = [
-    'id',
-    'date',
-    'text',
-    'newspapers',
-    ]
-articles_csv = csv.DictWriter(articles_csv_file, fieldnames=fieldnames)
-articles_csv.writeheader()
+    reader = PdfReader(str(pdf_file))
+    page_text = []
 
-for i in range(ARTICLES_REQUIRED):
-    id = f"1976-{i}"
+    for page in reader.pages:
+        text = page.extract_text() or ""
+        text = text.strip()
+        if text:
+            page_text.append(text)
 
-    print(id)
-    print(ds[i]["people_mentioned"])
+    return "\n\n".join(page_text)
 
-    text = ds[i]["article"]
-    date = ds[i]["dates"][-1]
-    newspaper_titles = []
-    for newspaper in ds[i]["newspaper_metadata"]:
-        newspaper_titles.append(
-            newspaper["newspaper_title"][1:-1].replace("'","").split(",")[0]
-        )
 
-    articles_csv.writerow({
-        'id': id,
-        'date': date,
-        'text': text,
-        'newspapers': newspaper_titles
-    })
+def main() -> None:
+    pdf_files = sorted(PDF_PATH.glob("*.pdf"))
+    if not pdf_files:
+        raise FileNotFoundError(f"No PDF files found in {PDF_PATH}")
 
-    create_pdf(text, os.path.join(PDF_PATH, f"{id}.pdf"))
+    with ARTICLE_FILENAME.open("w", encoding="utf8", newline="") as csvfile:
+        fieldnames = ["id", "date", "text", "newspapers"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
-articles_csv_file.close()
+        for pdf_file in pdf_files:
+            article_id = pdf_file.stem
+            print(f"Processing {article_id}")
+
+            text = extract_text_from_pdf(pdf_file)
+            if not text:
+                print(f"Warning: no text extracted from {pdf_file}")
+
+            modified = datetime.fromtimestamp(pdf_file.stat().st_mtime).strftime("%Y-%m-%d")
+
+            writer.writerow(
+                {
+                    "id": article_id,
+                    "date": modified,
+                    "text": text,
+                    "newspapers": "",
+                }
+            )
+
+
+if __name__ == "__main__":
+    main()
