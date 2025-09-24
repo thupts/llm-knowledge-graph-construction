@@ -31,7 +31,7 @@ if os.getenv("AZURE_OPENAI_API_KEY"):
 else:
     llm = ChatOpenAI(
         openai_api_key=os.getenv('OPENAI_API_KEY'), 
-        model_name="gpt-3.5-turbo"
+        model_name="gpt-4.1"
     )
     embedding_provider = OpenAIEmbeddings(
         openai_api_key=os.getenv('OPENAI_API_KEY'),

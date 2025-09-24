@@ -10,19 +10,28 @@ if "messages" not in st.session_state:
     ]
 
 # Submit handler
-def handle_submit(message):
+def handle_submit(message: str):
     """
-    Submit handler:
-
-    You will modify this method to talk with an LLM and provide
-    context using data from Neo4j.
+    Submit handler: 
+    - lưu tin nhắn user,
+    - gọi agent (LLM + Neo4j tools),
+    - lưu và hiển thị tin nhắn assistant.
     """
+    # Lưu tin nhắn user vào session state
+    st.session_state.messages.append({"role": "user", "content": message})
 
-    # Handle the response
-    with st.spinner('Thinking...'):
-        # Call the agent
-        response = generate_response(message)
-        write_message('assistant', response)
+    # Gọi agent để sinh câu trả lời
+    with st.spinner("Thinking..."):
+        try:
+            response = generate_response(message)
+        except Exception as e:
+            response = f"⚠️ Error: {str(e)}"
+
+    # Lưu tin nhắn assistant
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Hiển thị tin nhắn assistant
+    write_message("assistant", response)
 
 # Display messages in Session State
 for message in st.session_state.messages:
