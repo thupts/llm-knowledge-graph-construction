@@ -1,48 +1,17 @@
 import os
 
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_neo4j import Neo4jGraph
-from langchain_openai import ChatOpenAI
-from langchain_experimental.graph_transformers import LLMGraphTransformer
-from langchain_community.graphs.graph_document import Node, Relationship
-
 from dotenv import load_dotenv
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
+from langchain_community.graphs.graph_document import Node, Relationship
+from langchain_experimental.graph_transformers import LLMGraphTransformer
+
+from chatbot.graph import graph
+from chatbot.llm import embedding_provider, llm
+
 load_dotenv()
 
 DOCS_PATH = "llm-knowledge-graph/data/course/pdfs"
-
-# --- LLM and Embeddings: Azure/OpenAI switch ---
-if os.getenv("AZURE_OPENAI_API_KEY"):
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-        model_name="gpt-35-turbo"
-    )
-    embedding_provider = OpenAIEmbeddings(
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    )
-else:
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv('OPENAI_API_KEY'), 
-        model_name="gpt-3.5-turbo"
-    )
-    embedding_provider = OpenAIEmbeddings(
-        openai_api_key=os.getenv('OPENAI_API_KEY'),
-        model="text-embedding-ada-002"
-    )
-
-graph = Neo4jGraph(
-    url=os.getenv('NEO4J_URI'),
-    username=os.getenv('NEO4J_USERNAME'),
-    password=os.getenv('NEO4J_PASSWORD')
-)
 
 doc_transformer = LLMGraphTransformer(
     llm=llm,

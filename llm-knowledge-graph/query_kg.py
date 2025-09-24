@@ -1,31 +1,11 @@
-import os
-from langchain_openai import ChatOpenAI
-from langchain_neo4j import GraphCypherQAChain, Neo4jGraph
-from langchain.prompts import PromptTemplate
-
 from dotenv import load_dotenv
+from langchain.prompts import PromptTemplate
+from langchain_neo4j import GraphCypherQAChain
+
+from chatbot.graph import graph
+from chatbot.llm import llm
+
 load_dotenv()
-
-# --- LLM: Azure/OpenAI switch ---
-if os.getenv("AZURE_OPENAI_API_KEY"):
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-        temperature=0
-    )
-else:
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv('OPENAI_API_KEY'), 
-        temperature=0
-    )
-
-graph = Neo4jGraph(
-    url=os.getenv('NEO4J_URI'),
-    username=os.getenv('NEO4J_USERNAME'),
-    password=os.getenv('NEO4J_PASSWORD')
-)
 
 CYPHER_GENERATION_TEMPLATE = """Task:Generate Cypher statement to query a graph database.
 Instructions:

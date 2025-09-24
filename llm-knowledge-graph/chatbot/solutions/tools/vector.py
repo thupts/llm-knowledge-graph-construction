@@ -1,35 +1,26 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
 
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from langchain_neo4j import Neo4jGraph, Neo4jVector
+from dotenv import load_dotenv
+from graph import graph
+from langchain_neo4j import Neo4jVector
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_core.prompts import ChatPromptTemplate
 
-llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'), 
-    temperature=0
-)
+from llm import embedding_provider, llm
 
-embedding_provider = OpenAIEmbeddings(
-    openai_api_key=os.getenv('OPENAI_API_KEY')
-    )
+load_dotenv()
 
-graph = Neo4jGraph(
-    url=os.getenv('NEO4J_URI'),
-    username=os.getenv('NEO4J_USERNAME'),
-    password=os.getenv('NEO4J_PASSWORD')
-)
+VECTOR_INDEX_NAME = os.getenv("NEO4J_VECTOR_INDEX", "vector")
+EMBEDDING_PROPERTY = os.getenv("NEO4J_EMBEDDING_PROPERTY", "embedding")
+TEXT_PROPERTY = os.getenv("NEO4J_TEXT_PROPERTY", "text")
 
 chunk_vector = Neo4jVector.from_existing_index(
     embedding_provider,
     graph=graph,
-    index_name="vector",
-    embedding_node_property="embedding",
-    text_node_property="text",
+    index_name=VECTOR_INDEX_NAME,
+    embedding_node_property=EMBEDDING_PROPERTY,
+    text_node_property=TEXT_PROPERTY,
     retrieval_query="""
 // get the document
 MATCH (node)-[:PART_OF]->(d:Document)

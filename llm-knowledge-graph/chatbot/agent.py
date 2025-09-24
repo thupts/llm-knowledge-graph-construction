@@ -7,11 +7,10 @@ from langchain.tools import Tool
 from langchain_neo4j import Neo4jChatMessageHistory
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain import hub
 from utils import get_session_id
 
-from tools.vector import find_chunk
-from tools.cypher import run_cypher
+from solutions.tools.vector import find_chunk
+from solutions.tools.cypher import run_cypher
 
 chat_prompt = ChatPromptTemplate.from_messages(
     [

@@ -1,43 +1,15 @@
 import os
-from dotenv import load_dotenv
-load_dotenv()
 
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from langchain_neo4j import Neo4jGraph, Neo4jVector
+from dotenv import load_dotenv
+from langchain_neo4j import Neo4jVector
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_core.prompts import ChatPromptTemplate
 
-# --- LLM and Embeddings: Azure/OpenAI switch ---
-if os.getenv("AZURE_OPENAI_API_KEY"):
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-        temperature=0
-    )
-    embedding_provider = OpenAIEmbeddings(
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    )
-else:
-    llm = ChatOpenAI(
-        openai_api_key=os.getenv('OPENAI_API_KEY'), 
-        temperature=0
-    )
-    embedding_provider = OpenAIEmbeddings(
-        openai_api_key=os.getenv('OPENAI_API_KEY')
-    )
+from chatbot.graph import graph
+from chatbot.llm import embedding_provider, llm
 
-graph = Neo4jGraph(
-    url=os.getenv('NEO4J_URI'),
-    username=os.getenv('NEO4J_USERNAME'),
-    password=os.getenv('NEO4J_PASSWORD')
-)
+load_dotenv()
 
 chunk_vector = Neo4jVector.from_existing_index(
     embedding_provider,
