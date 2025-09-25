@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# tag::graph[]
+
 from langchain_neo4j import Neo4jGraph
 
 graph = Neo4jGraph(
@@ -10,5 +10,4 @@ graph = Neo4jGraph(
     username=os.getenv('NEO4J_USERNAME'),
     password=os.getenv('NEO4J_PASSWORD')
 )
-
-#end::graph[]
+print(graph.query("RETURN 'Hello from Neo4j!' AS msg"))
